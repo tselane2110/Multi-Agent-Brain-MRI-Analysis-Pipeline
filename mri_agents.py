@@ -12,8 +12,93 @@
 # -------------------------------------------------------
 
 from langchain_core.messages import HumanMessage
-from state import MRIAnalysisState
-from llm_setup import get_vision_llm, get_text_llm
+from agents.state import MRIAnalysisState
+from utils.llm_setup import get_vision_llm, get_text_llm
+
+
+# ═══════════════════════════════════════════════════════
+# AGENT 0: GATEKEEPER AGENT
+# Job: Runs FIRST before anything else.
+# Looks at the image and decides: is this actually a brain MRI?
+# If not → sets is_brain_mri = False and the pipeline stops.
+# If yes → pipeline continues normally.
+#
+# This is the "input validation" layer of the agentic system.
+# In production AI systems, you always validate inputs before
+# expensive downstream processing.
+# ═══════════════════════════════════════════════════════
+
+def gatekeeper_agent(state: MRIAnalysisState) -> dict:
+    """
+    Agent 0: Input Validation / Gatekeeper
+
+    Uses the vision LLM to verify the uploaded image is actually
+    a brain MRI before allowing the pipeline to proceed.
+    Rejects: non-medical images, non-brain scans (chest X-ray, knee MRI, etc.),
+             CT scans mistaken for MRI, photographs, etc.
+    """
+    print("🛡️  [Agent 0/5] Gatekeeper Agent running...")
+
+    vision_llm = get_vision_llm()
+
+    message = HumanMessage(
+        content=[
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{state['input_image_b64']}"
+                }
+            },
+            {
+                "type": "text",
+                "text": """You are a medical imaging classifier. Your ONLY job is to determine whether the given image is a brain MRI scan.
+
+Carefully examine the image and respond in this EXACT format — nothing else:
+
+VERDICT: [BRAIN_MRI or NOT_BRAIN_MRI]
+REASON: [one concise sentence explaining your decision]
+CONFIDENCE: [HIGH or MEDIUM or LOW]
+
+Classification rules:
+- BRAIN_MRI: Any MRI sequence (T1, T2, FLAIR, DWI, etc.) showing the brain/head, regardless of plane (axial, coronal, sagittal). Partial brain coverage is acceptable.
+- NOT_BRAIN_MRI: Photographs, CT scans, X-rays, ultrasounds, non-brain MRIs (spine, knee, abdomen), drawings, screenshots, or any non-medical image.
+
+Be strict. When in doubt, classify as NOT_BRAIN_MRI."""
+            }
+        ]
+    )
+
+    try:
+        response = vision_llm.invoke([message])
+        text = response.content.strip()
+
+        # Parse the structured response
+        is_brain_mri = "VERDICT: BRAIN_MRI" in text.upper()
+
+        # Extract the REASON line
+        reason = "No reason provided."
+        for line in text.splitlines():
+            if line.upper().startswith("REASON:"):
+                reason = line.split(":", 1)[1].strip()
+                break
+
+        if is_brain_mri:
+            print(f"   ✅ Valid brain MRI detected. Proceeding.")
+        else:
+            print(f"   ❌ Not a brain MRI. Pipeline halted. Reason: {reason}")
+
+        return {
+            "is_brain_mri": is_brain_mri,
+            "gatekeeper_reason": reason,
+        }
+
+    except Exception as e:
+        # If gatekeeper itself fails, fail safe — don't proceed
+        return {
+            "is_brain_mri": False,
+            "gatekeeper_reason": f"Gatekeeper agent encountered an error: {str(e)}",
+            "error": f"Gatekeeper Agent failed: {str(e)}",
+        }
 
 
 # ═══════════════════════════════════════════════════════
@@ -91,6 +176,7 @@ Examine this brain MRI image systematically and report the following:
    - Obvious sulcal/gyral abnormalities
 
 Be precise and objective. Use standard radiological descriptors (hyperintense, hypointense, isointense, homogeneous, heterogeneous). Do not render diagnoses."""
+            }
             }
         ]
     )
@@ -231,6 +317,7 @@ Perform a complete systematic analysis following the ACR (American College of Ra
     - Congenital/developmental variant
 
 For any finding, if confidence is [LOW], explicitly state what additional sequences or clinical information would help confirm it."""
+            }
             }
         ]
     )
@@ -657,4 +744,87 @@ If no issues found in a category, write "✓ Pass"]
         return {
             "critique_notes": f"Critic agent failed: {str(e)}. Using draft report.",
             "final_report": state.get("draft_report", ""),
+        }
+
+
+# ═══════════════════════════════════════════════════════
+# AGENT 6: TUMOR CONCLUSION AGENT
+# Job: Runs LAST. Reads everything the previous agents produced
+# and renders a single, clear tumor verdict.
+#
+# Why a separate agent for this instead of burying it in the report?
+#   - Forced focus: the agent's ONLY job is this one question
+#   - Explicit reasoning: it must justify its verdict from evidence
+#   - Clean UI: we can display the verdict as a prominent badge
+#   - Separation of concerns: report = full picture, verdict = bottom line
+# ═══════════════════════════════════════════════════════
+
+def tumor_conclusion_agent(state: MRIAnalysisState) -> dict:
+    """
+    Agent 6: Tumor Verdict
+
+    Synthesizes all prior agent outputs and renders a final
+    tumor assessment: DETECTED, NOT DETECTED, or UNCERTAIN.
+
+    This runs after the critic so it has access to the most
+    refined, reviewed version of all findings.
+    """
+    print("🔎 [Agent 6/6] Tumor Conclusion Agent running...")
+
+    if state.get("error") or not state.get("final_report"):
+        return {
+            "tumor_conclusion": "UNCERTAIN — Pipeline did not complete successfully. Manual review required."
+        }
+
+    text_llm = get_text_llm()
+
+    prompt = f"""You are a neuroradiology specialist rendering a final tumor assessment verdict.
+
+You have access to the complete analysis from a multi-agent brain MRI pipeline:
+
+SYSTEMATIC FINDINGS:
+{state.get('findings', 'Not available')}
+
+REASONING CHAIN & DIFFERENTIALS:
+{state.get('reasoning_chain', 'Not available')}
+
+FINAL REVIEWED REPORT:
+{state.get('final_report', 'Not available')}
+
+OVERALL CONFIDENCE LEVEL: {state.get('confidence_level', 'MEDIUM')}
+
+━━━ YOUR TASK ━━━
+
+Based ONLY on the evidence above, render a tumor verdict using EXACTLY this format:
+
+VERDICT: [TUMOR DETECTED / TUMOR NOT DETECTED / UNCERTAIN]
+
+SUPPORTING EVIDENCE:
+- [bullet 1: specific finding that supports your verdict]
+- [bullet 2: specific finding that supports your verdict]
+- [bullet 3 if applicable]
+
+AGAINST EVIDENCE (findings that argue against your verdict, if any):
+- [bullet or "None"]
+
+VERDICT CONFIDENCE: [HIGH / MEDIUM / LOW]
+
+WHAT WOULD CHANGE THIS VERDICT:
+[One sentence: what additional imaging, sequences, or clinical info could upgrade or overturn this verdict]
+
+━━━ VERDICT DEFINITIONS ━━━
+- TUMOR DETECTED: One or more findings are strongly consistent with a neoplastic process (mass lesion, ring enhancement, surrounding edema, mass effect, abnormal signal with neoplastic pattern)
+- TUMOR NOT DETECTED: No findings suggest neoplasm; other diagnoses (vascular, inflammatory, degenerative) better explain the findings, or scan appears normal
+- UNCERTAIN: Findings are ambiguous, image quality is insufficient, or additional sequences are required before a neoplastic process can be confidently included or excluded
+
+Be honest. UNCERTAIN is a valid and responsible verdict — do not force a binary answer when the evidence doesn't support one."""
+
+    try:
+        response = text_llm.invoke(prompt)
+        conclusion = response.content.strip()
+        return {"tumor_conclusion": conclusion}
+
+    except Exception as e:
+        return {
+            "tumor_conclusion": f"UNCERTAIN — Tumor conclusion agent failed: {str(e)}"
         }

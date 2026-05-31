@@ -12,7 +12,7 @@ import gradio as gr
 from PIL import Image
 import traceback
 
-from image_utils import preprocess_for_agent
+from utils.image_utils import preprocess_for_agent
 from pipeline import run_analysis
 
 
@@ -26,42 +26,52 @@ def analyze_mri(image: Image.Image, patient_context: str, progress=gr.Progress()
     if image is None:
         return (
             "❌ Please upload an MRI image first.",
-            "", "", "", "", None
+            "", "", "", "", "", None
         )
     
     try:
         progress(0.1, desc="Preprocessing image...")
         processed_img, image_b64 = preprocess_for_agent(image)
         
-        progress(0.2, desc="Starting pipeline... (this takes ~60 seconds)")
+        progress(0.2, desc="Starting pipeline... (this takes ~60-90 seconds)")
         
-        # Run the full agentic pipeline
         result = run_analysis(image_b64, patient_context)
         
         progress(1.0, desc="Done!")
-        
-        # Extract outputs for each tab in the UI
+
+        # ── Gatekeeper rejection ──────────────────────────
+        if not result.get("is_brain_mri"):
+            rejection_msg = (
+                f"🚫 IMAGE REJECTED BY GATEKEEPER\n\n"
+                f"This image does not appear to be a brain MRI scan.\n\n"
+                f"Reason: {result.get('gatekeeper_reason', 'No reason provided.')}\n\n"
+                f"Please upload a valid brain MRI image (T1, T2, FLAIR, DWI, etc.)"
+            )
+            return (rejection_msg, "", "", "", "", "", processed_img)
+
         error = result.get("error")
         if error:
             return (
-                f"⚠️ Pipeline encountered an error:\n{error}",
-                "", "", "", 
+                f"⚠️ Pipeline error:\n{error}",
+                "", "", "",
                 result.get("final_report", "Report not generated."),
+                result.get("tumor_conclusion", ""),
                 processed_img,
             )
-        
+
         return (
             result.get("image_description", "Not available"),
             result.get("findings", "Not available"),
             result.get("reasoning_chain", "Not available"),
             result.get("critique_notes", "Not available"),
             result.get("final_report", "Not available"),
+            result.get("tumor_conclusion", "Not available"),
             processed_img,
         )
         
     except Exception as e:
         error_msg = f"❌ Unexpected error:\n{traceback.format_exc()}"
-        return (error_msg, "", "", "", "", None)
+        return (error_msg, "", "", "", "", "", None)
 
 
 # ── UI Layout ────────────────────────────────────────────
@@ -79,11 +89,7 @@ def build_ui():
                 padding: 12px; 
                 margin: 10px 0;
                 font-size: 0.9em;
-                color: black;
             }
-            .strong{
-            color: red;
-            font-weight: bold;}
             .confidence-badge { font-weight: bold; }
         """
     ) as demo:
@@ -93,12 +99,12 @@ def build_ui():
             <div class="header">
                 <h1>🧠 Brain MRI Multi-Agent Analysis Pipeline</h1>
                 <p style="color: #666; font-size: 1.1em;">
-                    Powered by LangGraph · Groq Llama 4 Scout · Academic Research Tool
+                    Powered by LangGraph · Gemini Flash · Academic Research Tool
                 </p>
             </div>
             <div class="disclaimer">
-                ⚠️ <strong class = "strong">DISCLAIMER:</strong> This is an academic AI research tool built for 
-                a Master's-level Agentic AI course. It is <strong class = "strong">NOT</strong> intended for 
+                ⚠️ <strong>DISCLAIMER:</strong> This is an academic AI research tool built for 
+                a Master's-level Agentic AI course. It is <strong>NOT</strong> intended for 
                 clinical diagnosis or medical decision-making. All outputs require verification 
                 by a board-certified radiologist.
             </div>
@@ -128,13 +134,15 @@ def build_ui():
                 
                 gr.Markdown("""
                 **Pipeline Steps:**
-                1. 🔍 Preprocessor Agent — visual grounding
-                2. 🧠 Analysis Agent — anomaly detection  
-                3. 💭 Reasoning Agent — medical reasoning
-                4. 📝 Report Writer — structured report
-                5. 🔬 Critic Agent — quality review
+                1. 🛡️ Gatekeeper Agent — validates brain MRI
+                2. 🔍 Preprocessor Agent — visual grounding
+                3. 🧠 Analysis Agent — anomaly detection  
+                4. 💭 Reasoning Agent — medical reasoning
+                5. 📝 Report Writer — structured report
+                6. 🔬 Critic Agent — quality review
+                7. 🧬 Tumor Conclusion — tumor verdict
                 
-                *Analysis takes ~60-90 seconds*
+                *Analysis takes ~90-120 seconds*
                 """)
                 
             with gr.Column(scale=1):
@@ -153,35 +161,42 @@ def build_ui():
                 final_report_output = gr.Textbox(
                     label="AI-Generated Radiology Report",
                     lines=25,
-                    buttons=["copy"],
+                    show_copy_button=True,
+                )
+
+            with gr.Tab("🧬 Tumor Verdict"):
+                tumor_output = gr.Textbox(
+                    label="Tumor Conclusion Agent Output",
+                    lines=15,
+                    show_copy_button=True,
                 )
             
             with gr.Tab("🔍 Image Description"):
                 description_output = gr.Textbox(
                     label="Preprocessor Agent Output",
                     lines=12,
-                    buttons=["copy"],
+                    show_copy_button=True,
                 )
             
             with gr.Tab("🧠 Clinical Findings"):
                 findings_output = gr.Textbox(
                     label="Analysis Agent Output",
                     lines=15,
-                    buttons=["copy"],
+                    show_copy_button=True,
                 )
             
             with gr.Tab("💭 Reasoning Chain"):
                 reasoning_output = gr.Textbox(
                     label="Reasoning Agent Output",
                     lines=15,
-                    buttons=["copy"],
+                    show_copy_button=True,
                 )
             
             with gr.Tab("🔬 Critic Review"):
                 critique_output = gr.Textbox(
                     label="Critic Agent Notes",
                     lines=12,
-                    buttons=["copy"],
+                    show_copy_button=True,
                 )
         
         # Wire up the button
@@ -194,6 +209,7 @@ def build_ui():
                 reasoning_output,
                 critique_output,
                 final_report_output,
+                tumor_output,
                 processed_image,
             ],
         )
@@ -216,11 +232,12 @@ if __name__ == "__main__":
     print("🧠 Brain MRI Multi-Agent Analysis Pipeline")
     print("=" * 45)
     print("Starting Gradio interface...")
+    print("Make sure your .env file has GOOGLE_API_KEY set!")
     print("=" * 45)
     
     demo = build_ui()
     demo.launch(
-        server_name="127.0.0.1",
+        server_name="0.0.0.0",
         server_port=7860,
         share=False,    # set to True to get a public link
         show_error=True,

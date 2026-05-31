@@ -8,9 +8,9 @@
 ## What This Project Does
 
 This project implements a **multi-agent pipeline** that:
-1. Takes a brain MRI image as input
-2. Passes it through 5 specialized AI agents in sequence
-3. Produces a structured radiology-style report
+1. Validates the uploaded image is actually a brain MRI
+2. Passes it through 6 specialized AI agents in sequence
+3. Produces a structured radiology-style report + a dedicated tumor verdict
 
 Each agent has a single focused responsibility — a core principle of agentic system design.
 
@@ -22,36 +22,48 @@ Each agent has a single focused responsibility — a core principle of agentic s
 [MRI Image + Patient Context]
          ↓
 ┌─────────────────────────────┐
-│  Agent 1: Preprocessor      │  → Describes the image (visual grounding)
-│  (Groq Llama 4 Scout)      │
+│  Agent 0: Gatekeeper        │  → Is this a brain MRI? If not → STOP
+│  (Groq Llama 4 Scout)       │
+└─────────────┬───────────────┘
+         ↓ yes            ↓ no → Pipeline halts with rejection message
+┌─────────────────────────────┐
+│  Agent 1: Preprocessor      │  → Sequence ID, plane, anatomy, image quality
+│  (Groq Llama 4 Scout)       │
 └─────────────┬───────────────┘
               ↓
 ┌─────────────────────────────┐
-│  Agent 2: Analysis          │  → Detects anomalies, regions of concern
-│  (Groq Llama 4 Scout)      │
+│  Agent 2: Analysis          │  → ACR-structured systematic read (10 categories)
+│  (Groq Llama 4 Scout)       │
 └─────────────┬───────────────┘
-              ↓ (conditional: skip if error)
+              ↓ (conditional: skip to report writer if error)
 ┌─────────────────────────────┐
-│  Agent 3: Reasoning         │  → Medical reasoning, differential diagnosis
-│  (Groq Llama 3.3 70B)      │
-└─────────────┬───────────────┘
-              ↓
-┌─────────────────────────────┐
-│  Agent 4: Report Writer     │  → Structured radiology report
-│  (Groq Llama 3.3 70B)      │
+│  Agent 3: Reasoning         │  → VINDICATE differential, urgency triage
+│  (Groq Llama 3.3 70B)       │
 └─────────────┬───────────────┘
               ↓
 ┌─────────────────────────────┐
-│  Agent 5: Critic            │  → Reviews, critiques, improves report
-│  (Groq Llama 3.3 70B)      │
+│  Agent 4: Report Writer     │  → Full ACR-format structured radiology report
+│  (Groq Llama 3.3 70B)       │
+└─────────────┬───────────────┘
+              ↓
+┌─────────────────────────────┐
+│  Agent 5: Critic            │  → QA review: laterality, overconfidence, safety
+│  (Groq Llama 3.3 70B)       │
+└─────────────┬───────────────┘
+              ↓
+┌─────────────────────────────┐
+│  Agent 6: Tumor Conclusion  │  → TUMOR DETECTED / NOT DETECTED / UNCERTAIN
+│  (Groq Llama 3.3 70B)       │
 └─────────────────────────────┘
          ↓
-[Final Report + All Agent Outputs]
+[Final Report + Tumor Verdict + All Agent Outputs]
 ```
 
 **Orchestration:** LangGraph `StateGraph`  
 **Communication:** Shared typed state (`MRIAnalysisState`)  
-**Conditional flow:** Analysis agent failure → skip reasoning, go to report writer
+**Conditional edges:**
+- Gatekeeper rejection → pipeline halts at `END` immediately
+- Analysis agent failure → skip reasoning, go straight to report writer
 
 ---
 
@@ -72,43 +84,39 @@ Each agent has a single focused responsibility — a core principle of agentic s
 
 ### 1. Clone / Download the project
 ```bash
-# in cmd:
 git clone https://github.com/tselane2110/Multi-Agent-Brain-MRI-Analysis-Pipeline
 ```
 
 ### 2. Create a Virtual Environment and Install dependencies
-Creating the virtual environment
 ```bash
+# Create
 python -m venv venv
-```
-Activating the virtual environment
-```bash
-# via windows (cmd):
+
+# Activate — Windows CMD
 venv\Scripts\activate.bat
-```
-```bash
-# via windows (powershell)
+
+# Activate — Windows PowerShell
 venv\Scripts\Activate.ps1
-```
-Installing Dependencies in the virtual environment
-```bash
+
+# Install
 pip install -r requirements.txt
 ```
 
 ### 3. Get FREE API keys
 
-**Groq (required — for both vision and text agents):**
+**Groq (required — powers all 7 agents):**
 - Go to https://console.groq.com
 - Sign up and create an API key
 
-**Google Gemini (optional — fallback only):**
+**Google Gemini (optional — vision fallback only):**
 - Go to https://aistudio.google.com/app/apikey
-- Click "Create API Key"
 - Only needed if Groq is unavailable
 
 ### 4. Set up environment variables
 ```bash
 # Edit .env and paste your API keys
+GROQ_API_KEY=your_groq_key_here
+GOOGLE_API_KEY=your_gemini_key_here   # optional
 ```
 
 ### 5. Run
@@ -129,7 +137,6 @@ python test_pipeline.py path/to/mri.jpg   # uses your own MRI image
 
 ## Sample MRI Images for Testing
 
-Free academic MRI images you can use:
 - **BraTS Dataset**: https://www.med.upenn.edu/cbica/brats/
 - **OASIS Brain**: https://www.oasis-brains.org/
 - **Radiopaedia**: https://radiopaedia.org (search "brain MRI")
@@ -141,19 +148,19 @@ Free academic MRI images you can use:
 
 ```
 brain_mri_agent/
-├── app.py                  # Gradio web interface
-├── pipeline.py             # LangGraph graph definition (core)
+├── app.py                  # Gradio web interface (7 output tabs)
+├── pipeline.py             # LangGraph graph — nodes, edges, conditional routing
 ├── test_pipeline.py        # CLI test script
 ├── requirements.txt
 ├── .env.example
 │
 ├── agents/
-│   ├── state.py            # Shared state TypedDict
-│   └── mri_agents.py       # All 5 agent functions
+│   ├── state.py            # Shared state TypedDict (all agents read/write here)
+│   └── mri_agents.py       # All 7 agent functions
 │
 └── utils/
     ├── image_utils.py      # Image preprocessing & base64 conversion
-    └── llm_setup.py        # Free LLM initialization (Groq primary, Gemini fallback)
+    └── llm_setup.py        # LLM initialization (Groq primary, Gemini fallback)
 ```
 
 ---
@@ -164,11 +171,15 @@ brain_mri_agent/
 |---------|-------|
 | Multi-agent pipeline | `pipeline.py` — LangGraph StateGraph |
 | Shared agent state | `agents/state.py` — TypedDict |
-| Conditional edges | `pipeline.py` — `should_continue_after_analysis()` |
-| Vision + text agents | `agents/mri_agents.py` |
-| Self-reflection / critique | `critic_agent()` in `mri_agents.py` |
-| Graceful error handling | Error propagation through state |
-| Multimodal input | Image + text passed to vision LLM |
+| Conditional edges (×2) | Gatekeeper branch + analysis error branch in `pipeline.py` |
+| Input validation agent | `gatekeeper_agent()` — halts pipeline on invalid input |
+| Vision + text agents | Agents 0–2 use vision LLM; Agents 3–6 use text LLM |
+| ACR structured reporting | `report_writer_agent()` — follows radiology reporting standards |
+| VINDICATE differential dx | `reasoning_agent()` — real radiological reasoning framework |
+| Self-reflection / critique | `critic_agent()` — QA checklist including laterality audit |
+| Dedicated verdict agent | `tumor_conclusion_agent()` — isolated single-question reasoning |
+| Graceful error handling | Error propagation through state, pipeline continues to report |
+| Multimodal input | Base64 image + text context passed to vision LLM |
 
 ---
 
