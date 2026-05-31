@@ -23,27 +23,27 @@ Each agent has a single focused responsibility — a core principle of agentic s
          ↓
 ┌─────────────────────────────┐
 │  Agent 1: Preprocessor      │  → Describes the image (visual grounding)
-│  (Gemini Flash Vision)      │
+│  (Groq Llama 4 Scout)      │
 └─────────────┬───────────────┘
               ↓
 ┌─────────────────────────────┐
 │  Agent 2: Analysis          │  → Detects anomalies, regions of concern
-│  (Gemini Flash Vision)      │
+│  (Groq Llama 4 Scout)      │
 └─────────────┬───────────────┘
               ↓ (conditional: skip if error)
 ┌─────────────────────────────┐
 │  Agent 3: Reasoning         │  → Medical reasoning, differential diagnosis
-│  (Groq Llama / Gemini)      │
+│  (Groq Llama 3.3 70B)      │
 └─────────────┬───────────────┘
               ↓
 ┌─────────────────────────────┐
 │  Agent 4: Report Writer     │  → Structured radiology report
-│  (Groq Llama / Gemini)      │
+│  (Groq Llama 3.3 70B)      │
 └─────────────┬───────────────┘
               ↓
 ┌─────────────────────────────┐
 │  Agent 5: Critic            │  → Reviews, critiques, improves report
-│  (Groq Llama / Gemini)      │
+│  (Groq Llama 3.3 70B)      │
 └─────────────────────────────┘
          ↓
 [Final Report + All Agent Outputs]
@@ -60,8 +60,9 @@ Each agent has a single focused responsibility — a core principle of agentic s
 | Component | Tool | Cost |
 |-----------|------|------|
 | Agent Orchestration | LangGraph | Free |
-| Vision LLM | Google Gemini 1.5 Flash | Free (AI Studio) |
-| Text LLM | Groq Llama 3.1 8B | Free (Groq Console) |
+| Vision LLM | Groq Llama 4 Scout (17B) | Free (Groq Console) |
+| Text LLM | Groq Llama 3.3 70B Versatile | Free (Groq Console) |
+| Vision Fallback | Google Gemini 2.0 Flash | Free (AI Studio) |
 | Image Processing | OpenCV, Pillow | Free |
 | UI | Gradio | Free |
 
@@ -78,14 +79,14 @@ pip install -r requirements.txt
 
 ### 3. Get FREE API keys
 
-**Google Gemini (required — for vision):**
-- Go to https://aistudio.google.com/app/apikey
-- Click "Create API Key"
-- Copy the key
-
-**Groq (recommended — for faster text agents):**
+**Groq (required — for both vision and text agents):**
 - Go to https://console.groq.com
 - Sign up and create an API key
+
+**Google Gemini (optional — fallback only):**
+- Go to https://aistudio.google.com/app/apikey
+- Click "Create API Key"
+- Only needed if Groq is unavailable
 
 ### 4. Set up environment variables
 ```bash
@@ -135,7 +136,7 @@ brain_mri_agent/
 │
 └── utils/
     ├── image_utils.py      # Image preprocessing & base64 conversion
-    └── llm_setup.py        # Free LLM initialization (Gemini + Groq)
+    └── llm_setup.py        # Free LLM initialization (Groq primary, Gemini fallback)
 ```
 
 ---
