@@ -91,13 +91,17 @@ git clone https://github.com/tselane2110/Multi-Agent-Brain-MRI-Analysis-Pipeline
 ```bash
 # Create
 python -m venv venv
-
+```
+```bash
 # Activate — Windows CMD
 venv\Scripts\activate.bat
-
+```
+```bash
 # Activate — Windows PowerShell
 venv\Scripts\Activate.ps1
+```
 
+```bash
 # Install
 pip install -r requirements.txt
 ```
