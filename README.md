@@ -71,8 +71,26 @@ Each agent has a single focused responsibility — a core principle of agentic s
 ## Setup
 
 ### 1. Clone / Download the project
+```bash
+# in cmd:
+git clone https://github.com/tselane2110/Multi-Agent-Brain-MRI-Analysis-Pipeline
+```
 
-### 2. Install dependencies
+### 2. Create a Virtual Environment and Install dependencies
+Creating the virtual environment
+```bash
+python -m venv venv
+```
+Activating the virtual environment
+```bash
+# via windows (cmd):
+venv\Scripts\activate.bat
+```
+```bash
+# via windows (powershell)
+venv\Scripts\Activate.ps1
+```
+Installing Dependencies in the virtual environment
 ```bash
 pip install -r requirements.txt
 ```
