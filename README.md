@@ -1,8 +1,7 @@
 # 🧠 Brain MRI Multi-Agent Analysis Pipeline
 
 > A LangGraph-powered agentic AI system for automated brain MRI analysis and report generation.  
-> **Academic use only — not for clinical diagnosis.**
-
+> ⚠️ Academic use only - not for clinical diagnosis.
 ---
 
 ## What This Project Does
