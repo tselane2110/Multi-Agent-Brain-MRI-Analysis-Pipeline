@@ -12,7 +12,7 @@ import gradio as gr
 from PIL import Image
 import traceback
 
-from utils.image_utils import preprocess_for_agent
+from image_utils import preprocess_for_agent
 from pipeline import run_analysis
 
 
@@ -161,42 +161,42 @@ def build_ui():
                 final_report_output = gr.Textbox(
                     label="AI-Generated Radiology Report",
                     lines=25,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
 
             with gr.Tab("🧬 Tumor Verdict"):
                 tumor_output = gr.Textbox(
                     label="Tumor Conclusion Agent Output",
                     lines=15,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
             
             with gr.Tab("🔍 Image Description"):
                 description_output = gr.Textbox(
                     label="Preprocessor Agent Output",
                     lines=12,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
             
             with gr.Tab("🧠 Clinical Findings"):
                 findings_output = gr.Textbox(
                     label="Analysis Agent Output",
                     lines=15,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
             
             with gr.Tab("💭 Reasoning Chain"):
                 reasoning_output = gr.Textbox(
                     label="Reasoning Agent Output",
                     lines=15,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
             
             with gr.Tab("🔬 Critic Review"):
                 critique_output = gr.Textbox(
                     label="Critic Agent Notes",
                     lines=12,
-                    show_copy_button=True,
+                    buttons=["copy"],
                 )
         
         # Wire up the button
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     
     demo = build_ui()
     demo.launch(
-        server_name="0.0.0.0",
+        server_name="127.0.0.1",
         server_port=7860,
         share=False,    # set to True to get a public link
         show_error=True,

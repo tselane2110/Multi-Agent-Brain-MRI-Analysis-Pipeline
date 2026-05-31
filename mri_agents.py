@@ -12,8 +12,8 @@
 # -------------------------------------------------------
 
 from langchain_core.messages import HumanMessage
-from agents.state import MRIAnalysisState
-from utils.llm_setup import get_vision_llm, get_text_llm
+from state import MRIAnalysisState
+from llm_setup import get_vision_llm, get_text_llm
 
 
 # ═══════════════════════════════════════════════════════
@@ -177,7 +177,6 @@ Examine this brain MRI image systematically and report the following:
 
 Be precise and objective. Use standard radiological descriptors (hyperintense, hypointense, isointense, homogeneous, heterogeneous). Do not render diagnoses."""
             }
-            }
         ]
     )
     
@@ -317,7 +316,6 @@ Perform a complete systematic analysis following the ACR (American College of Ra
     - Congenital/developmental variant
 
 For any finding, if confidence is [LOW], explicitly state what additional sequences or clinical information would help confirm it."""
-            }
             }
         ]
     )

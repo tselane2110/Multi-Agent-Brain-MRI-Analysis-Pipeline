@@ -24,8 +24,8 @@
 # -------------------------------------------------------
 
 from langgraph.graph import StateGraph, END
-from agents.state import MRIAnalysisState
-from agents.mri_agents import (
+from state import MRIAnalysisState
+from mri_agents import (
     gatekeeper_agent,
     preprocessor_agent,
     analysis_agent,
