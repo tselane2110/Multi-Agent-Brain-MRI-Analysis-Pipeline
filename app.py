@@ -89,6 +89,7 @@ def build_ui():
                 padding: 12px; 
                 margin: 10px 0;
                 font-size: 0.9em;
+                color: black;
             }
             .confidence-badge { font-weight: bold; }
         """
@@ -103,8 +104,8 @@ def build_ui():
                 </p>
             </div>
             <div class="disclaimer">
-                ⚠️ <strong>DISCLAIMER:</strong> This is an academic AI research tool built for 
-                a Master's-level Agentic AI course. It is <strong>NOT</strong> intended for 
+                ⚠️ <strong style = 'color: red; font-style: bold'>DISCLAIMER:</strong> This is an academic AI research tool built for 
+                a Master's-level Agentic AI course. It is <strong style = 'color: red; font-style: bold'>NOT</strong> intended for 
                 clinical diagnosis or medical decision-making. All outputs require verification 
                 by a board-certified radiologist.
             </div>
