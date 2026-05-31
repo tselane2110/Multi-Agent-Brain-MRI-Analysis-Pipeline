@@ -11,7 +11,7 @@ This project implements a **multi-agent pipeline** that:
 2. Passes it through 6 specialized AI agents in sequence
 3. Produces a structured radiology-style report + a dedicated tumor verdict
 
-Each agent has a single focused responsibility — a core principle of agentic system design.
+Each agent has a single focused responsibility - a core principle of agentic system design.
 
 ---
 
