@@ -1,0 +1,5 @@
+/.env
+/myenv
+/output_report.txt
+/test_mri.jpg
+/__pycache__
