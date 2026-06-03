@@ -166,7 +166,7 @@ brain_mri_agent/
 | Input validation agent | `gatekeeper_agent()` — halts pipeline on invalid input |
 | Vision + text agents | Agents 0–2 use vision LLM; Agents 3–6 use text LLM |
 | ACR structured reporting | `report_writer_agent()` — follows radiology reporting standards |
-| VINDICATE differential dx | `reasoning_agent()` — real radiological reasoning framework |
+| VINDICATE differential framework | `reasoning_agent()` — real radiological reasoning framework |
 | Self-reflection / critique | `critic_agent()` — QA checklist including laterality audit |
 | Dedicated verdict agent | `tumor_conclusion_agent()` — isolated single-question reasoning |
 | Graceful error handling | Error propagation through state, pipeline continues to report |
