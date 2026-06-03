@@ -62,7 +62,7 @@ Each agent has a single focused responsibility - a core principle of agentic sys
 **Communication:** Shared typed state (`MRIAnalysisState`)  
 **Conditional edges:**
 - Gatekeeper rejection → pipeline halts at `END` immediately
-- Analysis agent failure → skip reasoning, go straight to report writer
+- Preprocessor/Analysis agent failure → skip reasoning, go straight to report writer
 
 ---
 
