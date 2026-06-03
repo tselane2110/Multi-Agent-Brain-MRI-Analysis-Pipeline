@@ -62,7 +62,7 @@ Each agent has a single focused responsibility - a core principle of agentic sys
 **Communication:** Shared typed state (`MRIAnalysisState`)  
 **Conditional edges:**
 - Gatekeeper rejection → pipeline halts at `END` immediately
-- Analysis agent failure → skip reasoning, go straight to report writer
+- Preprocessor/Analysis agent failure → skip reasoning, go straight to report writer
 
 ---
 
@@ -124,16 +124,9 @@ GOOGLE_API_KEY=your_gemini_key_here   # optional
 
 ### 5. Run
 
-**Option A: Gradio Web UI (recommended)**
 ```bash
 python app.py
 # Open http://localhost:7860 in your browser
-```
-
-**Option B: Command line (for testing)**
-```bash
-python test_pipeline.py                    # uses a synthetic test image
-python test_pipeline.py path/to/mri.jpg   # uses your own MRI image
 ```
 
 ---
@@ -153,17 +146,12 @@ python test_pipeline.py path/to/mri.jpg   # uses your own MRI image
 brain_mri_agent/
 ├── app.py                  # Gradio web interface (7 output tabs)
 ├── pipeline.py             # LangGraph graph — nodes, edges, conditional routing
-├── test_pipeline.py        # CLI test script
 ├── requirements.txt
-├── .env.example
-│
-├── agents/
-│   ├── state.py            # Shared state TypedDict (all agents read/write here)
-│   └── mri_agents.py       # All 7 agent functions
-│
-└── utils/
-    ├── image_utils.py      # Image preprocessing & base64 conversion
-    └── llm_setup.py        # LLM initialization (Groq primary, Gemini fallback)
+├── .env                    # contains the environment variables (API keys for Groq and Gemini)
+├── state.py                # Shared state TypedDict (all agents read/write here)
+├── mri_agents.py           # All 7 agent functions
+├── image_utils.py          # Image preprocessing & base64 conversion
+├── llm_setup.py            # LLM initialization (Groq primary, Gemini fallback)
 ```
 
 ---
