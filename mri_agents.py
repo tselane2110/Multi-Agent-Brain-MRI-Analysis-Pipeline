@@ -1,6 +1,6 @@
 # agents/mri_agents.py
 # -------------------------------------------------------
-# This file defines all 4 agents in our pipeline.
+# This file defines all 7 agents in our pipeline.
 #
 # Each agent is just a Python function that:
 #   1. Receives the current STATE
@@ -37,7 +37,7 @@ def gatekeeper_agent(state: MRIAnalysisState) -> dict:
     Rejects: non-medical images, non-brain scans (chest X-ray, knee MRI, etc.),
              CT scans mistaken for MRI, photographs, etc.
     """
-    print("🛡️  [Agent 0/5] Gatekeeper Agent running...")
+    print("🛡️  [Agent 1/7] Gatekeeper Agent running...")
 
     vision_llm = get_vision_llm()
 
@@ -70,7 +70,7 @@ Be strict. When in doubt, classify as NOT_BRAIN_MRI."""
 
     try:
         response = vision_llm.invoke([message])
-        text = response.content.strip()
+        text = response.content.strip() # removes leading+trailing whitespace/newlines
 
         # Parse the structured response
         is_brain_mri = "VERDICT: BRAIN_MRI" in text.upper()
@@ -116,7 +116,7 @@ def preprocessor_agent(state: MRIAnalysisState) -> dict:
     Think of this as the agent saying: "Let me look at this scan first
     and tell everyone what I see before we start analyzing."
     """
-    print("🔍 [Agent 1/4] Preprocessor Agent running...")
+    print("🔍 [Agent 2/7] Preprocessor Agent running...")
     
     vision_llm = get_vision_llm()
     
@@ -184,16 +184,11 @@ Be precise and objective. Use standard radiological descriptors (hyperintense, h
         response = vision_llm.invoke([message])
         description = response.content
         
-        # Extract quality notes (simple heuristic: look for quality section)
-        quality_notes = "Image quality assessment included in description above."
-        
         return {
             "image_description": description,
-            "image_quality_notes": quality_notes,
         }
     except Exception as e:
         return {"error": f"Preprocessor Agent failed: {str(e)}"}
-
 
 # ═══════════════════════════════════════════════════════
 # AGENT 2: ANALYSIS AGENT
@@ -209,11 +204,7 @@ def analysis_agent(state: MRIAnalysisState) -> dict:
     and performs a systematic clinical analysis looking for
     potential pathological findings.
     """
-    print("🧠 [Agent 2/4] Analysis Agent running...")
-    
-    # Stop early if previous agent failed
-    if state.get("error"):
-        return {}
+    print("🧠 [Agent 3/7] Analysis Agent running...")
     
     vision_llm = get_vision_llm()
     
@@ -368,7 +359,7 @@ def reasoning_agent(state: MRIAnalysisState) -> dict:
     
     This is text-only (no image needed anymore), so we can use Groq/Llama.
     """
-    print("💭 [Agent 3/4] Reasoning Agent running...")
+    print("💭 [Agent 4/7] Reasoning Agent running...")
     
     if state.get("error"):
         return {}
@@ -492,7 +483,7 @@ def report_writer_agent(state: MRIAnalysisState) -> dict:
     Synthesizes all previous agent outputs into a professional,
     structured radiology report format.
     """
-    print("📝 [Agent 4/4] Report Writer Agent running...")
+    print("📝 [Agent 5/7] Report Writer Agent running...")
     
     if state.get("error"):
         # Even with errors, write a partial report
@@ -661,7 +652,7 @@ def critic_agent(state: MRIAnalysisState) -> dict:
     
     This agent demonstrates a key agentic pattern: REFLECTION.
     """
-    print("🔬 [Agent 5/5] Critic Agent running...")
+    print("🔬 [Agent 6/7] Critic Agent running...")
     
     if state.get("error") or not state.get("draft_report"):
         return {}
@@ -767,7 +758,7 @@ def tumor_conclusion_agent(state: MRIAnalysisState) -> dict:
     This runs after the critic so it has access to the most
     refined, reviewed version of all findings.
     """
-    print("🔎 [Agent 6/6] Tumor Conclusion Agent running...")
+    print("🔎 [Agent 7/7] Tumor Conclusion Agent running...")
 
     if state.get("error") or not state.get("final_report"):
         return {
