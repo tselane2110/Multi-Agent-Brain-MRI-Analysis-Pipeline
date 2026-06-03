@@ -9,7 +9,7 @@
 #   Agents don't call each other directly — they share state.
 # -------------------------------------------------------
 
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, Literal
 
 
 class MRIAnalysisState(TypedDict):
@@ -31,7 +31,7 @@ class MRIAnalysisState(TypedDict):
 
     # --- Gatekeeper Agent output ---
     is_brain_mri: bool        # True = valid brain MRI, False = rejected
-    gatekeeper_reason: Optional[str]    # explanation of the decision
+    gatekeeper_reason: str    # explanation of the decision
 
     # --- Preprocessor Agent output ---
     image_description: str    # basic visual description of the MRI
@@ -57,4 +57,4 @@ class MRIAnalysisState(TypedDict):
     
     # --- Pipeline metadata ---
     error: Optional[str]                # any error that occurred
-    confidence_level: Optional[str]     # overall confidence: HIGH / MEDIUM / LOW
+    confidence_level: Optional[Literal["HIGH", "MEDIUM", "LOW"]]     # overall confidence: HIGH / MEDIUM / LOW
