@@ -153,17 +153,12 @@ python test_pipeline.py path/to/mri.jpg   # uses your own MRI image
 brain_mri_agent/
 ├── app.py                  # Gradio web interface (7 output tabs)
 ├── pipeline.py             # LangGraph graph — nodes, edges, conditional routing
-├── test_pipeline.py        # CLI test script
 ├── requirements.txt
-├── .env.example
-│
-├── agents/
-│   ├── state.py            # Shared state TypedDict (all agents read/write here)
-│   └── mri_agents.py       # All 7 agent functions
-│
-└── utils/
-    ├── image_utils.py      # Image preprocessing & base64 conversion
-    └── llm_setup.py        # LLM initialization (Groq primary, Gemini fallback)
+├── .env                    # contains the environment variables (API keys for Groq and Gemini)
+├── state.py                # Shared state TypedDict (all agents read/write here)
+├── mri_agents.py           # All 7 agent functions
+├── image_utils.py          # Image preprocessing & base64 conversion
+├── llm_setup.py            # LLM initialization (Groq primary, Gemini fallback)
 ```
 
 ---
