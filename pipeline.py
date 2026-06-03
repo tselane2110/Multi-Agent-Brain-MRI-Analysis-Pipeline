@@ -48,13 +48,20 @@ def should_proceed_after_gatekeeper(state: MRIAnalysisState) -> str:
     return "preprocessor"
 
 
+def should_continue_after_preprocessor(state: MRIAnalysisState) -> str:
+    if state.get("error"):
+        print("⚠️  Error detected, going to report writer.")
+        return "report_writer"
+    return "analysis"
+
+
 def should_continue_after_analysis(state: MRIAnalysisState) -> str:
     """
     Conditional edge after analysis agent.
     If there's an error → skip reasoning, go straight to report writer.
     """
     if state.get("error"):
-        print("⚠️  Error detected, skipping reasoning agent.")
+        print("⚠️  Error detected, going to report writer.")
         return "report_writer"
     return "reasoning"
 
@@ -84,8 +91,15 @@ def build_mri_pipeline() -> StateGraph:
         }
     )
 
-    # Preprocessor → Analysis (always)
-    graph.add_edge("preprocessor", "analysis")
+    # Preprocessor → conditional: error → report_writer, success → analysis
+    graph.add_conditional_edges(
+        "preprocessor",
+        should_continue_after_preprocessor,
+        {
+            "analysis": "analysis",
+            "report_writer": "report_writer",
+        }
+    )
 
     # Analysis → conditional: error → report_writer, success → reasoning
     graph.add_conditional_edges(
@@ -116,18 +130,18 @@ def run_analysis(image_b64: str, patient_context: str = "") -> MRIAnalysisState:
     initial_state: MRIAnalysisState = {
         "input_image_b64": image_b64,
         "patient_context": patient_context if patient_context.strip() else "Not provided.",
-        "is_brain_mri": None,
-        "gatekeeper_reason": None,
-        "image_description": None,
+        "is_brain_mri": False,
+        "gatekeeper_reason": "",
+        "image_description": "",
         "image_quality_notes": None,
-        "findings": None,
+        "findings": "",
         "regions_of_concern": None,
-        "reasoning_chain": None,
+        "reasoning_chain": "",
         "differential_notes": None,
-        "draft_report": None,
+        "draft_report": "",
         "critique_notes": None,
-        "final_report": None,
-        "tumor_conclusion": None,
+        "final_report": "",
+        "tumor_conclusion": "",
         "error": None,
         "confidence_level": None,
     }
