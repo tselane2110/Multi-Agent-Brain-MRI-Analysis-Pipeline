@@ -30,30 +30,30 @@ class MRIAnalysisState(TypedDict):
     patient_context: Optional[str]  # optional: age, symptoms, etc.
 
     # --- Gatekeeper Agent output ---
-    is_brain_mri: Optional[bool]        # True = valid brain MRI, False = rejected
+    is_brain_mri: bool        # True = valid brain MRI, False = rejected
     gatekeeper_reason: Optional[str]    # explanation of the decision
 
     # --- Preprocessor Agent output ---
-    image_description: Optional[str]    # basic visual description of the MRI
+    image_description: str    # basic visual description of the MRI
     image_quality_notes: Optional[str]  # notes on image quality/artifacts
     
     # --- Analysis Agent output ---
-    findings: Optional[str]             # detected anomalies and observations
+    findings: str             # detected anomalies and observations
     regions_of_concern: Optional[str]   # specific brain regions flagged
     
     # --- Reasoning Agent output ---
-    reasoning_chain: Optional[str]      # step-by-step medical reasoning
+    reasoning_chain: str      # step-by-step medical reasoning
     differential_notes: Optional[str]   # possible interpretations
     
     # --- Report Writer output ---
-    draft_report: Optional[str]         # structured radiology-style report
+    draft_report: str         # structured radiology-style report
     
     # --- Critic Agent output ---
     critique_notes: Optional[str]       # what the critic flagged
-    final_report: Optional[str]         # polished final report
+    final_report: str         # polished final report
 
     # --- Tumor Conclusion (appended last) ---
-    tumor_conclusion: Optional[str]     # TUMOR DETECTED / NOT DETECTED / UNCERTAIN + reasoning
+    tumor_conclusion: str     # TUMOR DETECTED / NOT DETECTED / UNCERTAIN + reasoning
     
     # --- Pipeline metadata ---
     error: Optional[str]                # any error that occurred
