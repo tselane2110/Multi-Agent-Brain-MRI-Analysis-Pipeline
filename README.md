@@ -124,16 +124,9 @@ GOOGLE_API_KEY=your_gemini_key_here   # optional
 
 ### 5. Run
 
-**Option A: Gradio Web UI (recommended)**
 ```bash
 python app.py
 # Open http://localhost:7860 in your browser
-```
-
-**Option B: Command line (for testing)**
-```bash
-python test_pipeline.py                    # uses a synthetic test image
-python test_pipeline.py path/to/mri.jpg   # uses your own MRI image
 ```
 
 ---
