@@ -45,7 +45,7 @@ def load_and_preprocess(image_input) -> Image.Image:
 
     # --- Enhance contrast for LLM visibility ---
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    result = clahe.apply(img)   
+    img = clahe.apply(img)   
     
     # enhancer = ImageEnhance.Contrast(img)
     # img = enhancer.enhance(1.5)  # 1.5x contrast boost
