@@ -100,7 +100,7 @@ def build_ui():
             <div class="header">
                 <h1>🧠 Brain MRI Multi-Agent Analysis Pipeline</h1>
                 <p style="color: #666; font-size: 1.1em;">
-                    Powered by LangGraph · Gemini Flash · Academic Research Tool
+                    Powered by LangGraph · Groq Llama 4 Scout · Academic Research Tool
                 </p>
             </div>
             <div class="disclaimer">
