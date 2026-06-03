@@ -44,8 +44,11 @@ def load_and_preprocess(image_input) -> Image.Image:
     img = Image.fromarray(img_array.astype(np.uint8))
 
     # --- Enhance contrast for LLM visibility ---
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.5)  # 1.5x contrast boost
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    result = clahe.apply(img)   
+    
+    # enhancer = ImageEnhance.Contrast(img)
+    # img = enhancer.enhance(1.5)  # 1.5x contrast boost
 
     # --- Resize to standard size ---
     img = img.resize((512, 512), Image.LANCZOS)
